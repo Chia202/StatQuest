@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>应用统计智能体评测任务集 — 信用卡客户风险评分分析</title>
+<style>
+  :root {
+    --primary: #003366;
+    --secondary: #006699;
+    --good-bg: #e6f4ea;
+    --good-border: #4caf50;
+    --mid-bg: #fff8e1;
+    --mid-border: #ffa000;
+    --bad-bg: #fce8e6;
+    --bad-border: #d32f2f;
+    --info-bg: #e3f2fd;
+    --info-border: #1976d2;
+    --gray: #f5f5f5;
+    --text: #222;
+    --text-light: #555;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, 'Microsoft YaHei', sans-serif;
+    line-height: 1.6;
+    color: var(--text);
+    background: #fafafa;
+    padding: 2rem 1rem;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 2.5rem 3rem;
+  }
+  h1 {
+    font-size: 2.2rem;
+    color: var(--primary);
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1.2rem;
+  }
+  h2 {
+    font-size: 1.6rem;
+    color: var(--secondary);
+    margin: 2.2rem 0 1rem;
+    padding-left: 0.5rem;
+    border-left: 5px solid var(--secondary);
+  }
+  h3 {
+    font-size: 1.3rem;
+    color: #333;
+    margin: 1.8rem 0 0.8rem;
+  }
+  h4 {
+    font-size: 1.1rem;
+    color: #444;
+    margin: 1.4rem 0 0.6rem;
+  }
+  p, li { margin-bottom: 0.8rem; }
+  .meta {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+  }
+  .phase-title {
+    background: var(--gray);
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-weight: bold;
+    color: var(--primary);
+    margin: 2rem 0 1rem;
+    font-size: 1.2rem;
+  }
+  .question-box {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 1.8rem 0;
+    overflow: hidden;
+  }
+  .question-header {
+    background: #f0f6fc;
+    padding: 0.8rem 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .question-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+  .difficulty-tag {
+    padding: 0.2rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+  }
+  .tag-easy { background: #4caf50; }
+  .tag-medium { background: #ff9800; }
+  .tag-hard { background: #d32f2f; }
+  .answer-section {
+    padding: 1rem 1.2rem;
+    border-top: 1px solid #eee;
+  }
+  .answer-quality {
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .quality-badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: white;
+  }
+  .badge-good { background: var(--good-border); }
+  .badge-mid { background: var(--mid-border); }
+  .badge-bad { background: var(--bad-border); }
+  .answer-content {
+    margin-top: 0.6rem;
+    padding-left: 0.5rem;
+  }
+  .reason-box {
+    margin-top: 0.8rem;
+    padding: 0.7rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    border-left: 4px solid;
+  }
+  .reason-good { background: var(--good-bg); border-color: var(--good-border); }
+  .reason-mid { background: var(--mid-bg); border-color: var(--mid-border); }
+  .reason-bad { background: var(--bad-bg); border-color: var(--bad-border); }
+  .info-box {
+    background: var(--info-bg);
+    border-left: 4px solid var(--info-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+    font-size: 0.95rem;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.8rem 0 1.2rem;
+    font-size: 0.9rem;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 0.5rem 0.7rem;
+    text-align: left;
+  }
+  th { background: #f0f0f0; font-weight: 600; }
+  pre {
+    background: #f4f4f4;
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    margin: 0.8rem 0;
+  }
+  code { font-family: 'Consolas', 'Courier New', monospace; background: #f0f0f0; padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
+  .toc {
+    background: #f9f9f9;
+    padding: 1.2rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+  }
+  .toc h3 { margin-top: 0; }
+  .toc ul { list-style: none; padding-left: 0; }
+  .toc li { margin-bottom: 0.4rem; }
+  .toc a { color: var(--secondary); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .page-break { margin: 2rem 0; }
+  @media (max-width: 768px) {
+    .container { padding: 1.2rem; }
+    body { padding: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>《应用统计智能体评测任务集》</h1>
+<p class="meta"><strong>案例背景：</strong>某银行信用卡客户风险评分分析 | 基于Kaggle “Give Me Some Credit” 数据集<br>参考框架：《The Art of Data Science》(Peng & Matsui, 2017)</p>
+
+<div class="toc">
+  <h3>📋 目录</h3>
+  <ul>
+    <li><a href="#phase1">环节一：问题提出与转化</a> — 问题1‑1（简单）、1‑2（中等）、1‑3（困难）</li>
+    <li><a href="#phase2">环节二：数据准备与探索性分析</a> — 问题2‑1（简单）、2‑2（中等）、2‑3（困难）</li>
+    <li><a href="#phase3">环节三：模型选择与构建</a> — 问题3‑1（简单）、3‑2（中等）、3‑3（困难）</li>
+    <li><a href="#phase4">环节四：结果解释与可视化</a> — 问题4‑1（简单）、4‑2（中等）、4‑3（困难）</li>
+    <li><a href="#phase5">环节五：报告生成</a> — 问题5‑1（简单）、5‑2（中等）、5‑3（困难）</li>
+    <li><a href="#summary">总结</a></li>
+  </ul>
+</div>
+
+<!-- 环节一 -->
+<h2 id="phase1" class="phase-title">🔹 环节一：问题提出与转化</h2>
+
+<!-- 问题1-1 简单 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题1‑1：业务问题的初步理解</span>
+    <span class="difficulty-tag tag-easy">简单</span>
+  </div>
+  <div class="answer-section">
+    <p><strong>问题描述：</strong>请阅读上述案例背景，用自己的语言概括该银行面临的核心业务问题，并说明为什么信用评分模型对该银行具有重要意义。要求明确区分业务问题和统计问题的差异，至少指出该数据集的三个关键特征。</p>
+    <div class="info-box"><strong>难度依据：</strong>基于对已有背景材料的理解和概括，属于“理解”层面，统计知识门槛低，适合建立业务转分析问题的初始意识。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p>在回答该问题之前，首先需要明确一个核心区分：银行面临的<strong>业务问题</strong>与数据分析人员面对的<strong>统计问题</strong>是两个不同层次的问题，虽相互关联但不可混淆。</p>
+      <h4>一、业务问题的本质</h4>
+      <p>该银行面临的核心业务问题是<strong>信用风险管理中的信息不对称困境</strong>。具体而言，银行在信用卡业务拓展过程中，需要向大量申请人发放信贷，但银行无法完全获知每个申请人的真实还款意愿和还款能力……</p>
+      <h4>二、从业务问题到统计问题的转化</h4>
+      <p>（1）<strong>分析对象</strong>：15万条信用卡客户记录；（2）<strong>目标变量</strong>：二分类变量SeriousDlqin2yrs；（3）<strong>核心任务</strong>：基于11个特征变量构建分类预测模型。统计问题可表述为：<strong>给定客户的11个特征变量，建立一个二分类预测模型，以最大化对目标变量的分类准确率，同时保持模型的可解释性和稳定性</strong>。</p>
+      <h4>三、信用评分模型的重要意义</h4>
+      <p>第一，效率维度；第二，一致性维度；第三，风险管理维度。</p>
+      <h4>四、数据集的三个关键特征</h4>
+      <p>（1）类别不平衡问题；（2）缺失值问题（月收入缺失率约20%）；（3）变量间的逻辑关联性（逾期变量的共线性）。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>业务问题与统计问题的准确区分，主动识别数据集关键特征并讨论建模含义，逻辑层次分明，体现了“先理解问题再动手分析”的良好素养。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content">
+      <p>该银行的核心业务问题是要判断信用卡申请人未来会不会违约，也就是成为“坏客户”。银行需要用一个模型来预测客户的违约概率，这样可以减少坏账损失……</p>
+      <p>业务问题是怎么减少坏账，统计问题就是用数据建立一个预测模型。这个模型的目标变量是SeriousDlqin2yrs。</p>
+    </div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>正确识别核心业务问题但分析深度不足，对意义的讨论流于表面，数据集特征讨论基于直觉而非系统分析，逻辑结构简单。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content">
+      <p>银行想做个模型来预测谁会欠钱不还。数据里有个y变量表示是不是坏客户，用0和1表示。这个数据集有15万条数据，挺大的。我觉得做个逻辑回归就可以了。</p>
+    </div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>缺乏深入理解，未体现业务到统计的转化，忽略类别不平衡和缺失值，语言口语化，反映“拿到数据就建模”的错误思维。</div>
+  </div>
+</div>
+
+<!-- 问题1-2 中等 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题1‑2：研究问题的操作化定义</span>
+    <span class="difficulty-tag tag-medium">中等</span>
+  </div>
+  <div class="answer-section">
+    <p><strong>问题描述：</strong>基于案例背景，将业务目标转化为可检验的统计假设，明确研究设计类型，为每个假设定义原假设和备择假设，并规划分析流程及关键决策点。</p>
+    <div class="info-box"><strong>难度依据：</strong>需将模糊业务概念转化为统计假设框架，区分研究设计类型并进行论证，要求一定的抽象思维和前瞻规划能力，适合已完成基础统计课程的学生。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、业务目标的操作化定义与统计假设转化</strong> —— 三个层次：特征有效性假设（H₀₁）、模型预测有效性假设（H₀₂）、评分区分度假设（H₀₃）。</p>
+      <p><strong>二、研究设计类型的选择与论证</strong> —— 定位为<strong>预测性建模</strong>，排除因果推断的困难性和验证性分析的局限性，探索性分析作为初始步骤。</p>
+      <p><strong>三、预期分析流程与关键决策点</strong> —— 七阶段流程：数据质量评估、EDA、特征工程、模型选择、训练调优、模型评估、结果解释与部署，每阶段标注了关键决策点。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>假设体系递进清晰，研究设计选择有严密论证（排除法和正面论证），分析流程有前瞻性决策点，体现了系统性的问题分析能力。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content">
+      <p>假设1：月收入与违约概率有关。假设2：负债率与违约概率有关。研究设计是分类问题，用预测性建模。流程：数据清洗→特征选择→逻辑回归→评估准确率→如果效果不好换模型。</p>
+    </div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>假设零散缺乏系统性，研究设计选择无论证，流程规划粗糙，缺少关键决策点。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>统计假设就是看哪些变量跟y有关，做显著性检验，p值小于0.05就说明有关。这是分类问题，用机器学习做。流程：导入数据→训练模型→看准确率。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>核心概念理解缺失，回答笼统，未给出具体检验方法，对信用评分复杂性缺乏认识。</div>
+  </div>
+</div>
+
+<!-- 问题1-3 困难 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题1‑3：分析方法论的综合论证</span>
+    <span class="difficulty-tag tag-hard">困难</span>
+  </div>
+  <div class="answer-section">
+    <p><strong>问题描述：</strong>作为数据科学负责人，比较经典统计建模与现代机器学习在信用评分下的适用性，设计混合分析策略，分析失败模式并联系《The Art of Data Science》说明迭代调整策略。</p>
+    <div class="info-box"><strong>难度依据：</strong>需在方法论层面整合多维约束（可解释性、稳定性、公平性），设计混合策略并预判风险，要求高层次的方法论理解和系统思维。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、方法论比较</strong>——从可解释性（监管合规）、稳定性（线上鲁棒性）、精度（边际价值）、公平性四个维度系统对比。</p>
+      <p><strong>二、混合策略</strong>——“经典方法为主体，机器学习为辅助”：XGBoost用于特征筛选与探索，逻辑回归+WOE用于核心建模与部署，两者协同诊断。</p>
+      <p><strong>三、失败模式分析</strong>——特征合规性预审、WOE信息损失监控、模型性能监控仪表板等预防措施。</p>
+      <p><strong>四、迭代与调整</strong>——引用书中“数据分析是艺术”的核心，提出数据探索与问题定义互动、模型反馈驱动特征循环、业务反馈持续融入三个原则。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>多维评估框架完整，混合策略角色分工清晰，失败模式分析可操作，理论引用自然，展现战略级分析思维。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>逻辑回归可解释，XGBoost精度高。混合策略：两个都建，选效果好的。失败可能是过拟合，用交叉验证。分析过程不断试错。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>比较维度单一，混合策略缺乏有机设计，失败模式分析浅显，未联系理论框架。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>XGBoost肯定比逻辑回归好，精度高。深度学习才是主流。混合就ensemble一下，失败就多调调参数。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>忽略信用评分业务约束，方法认知片面，策略粗糙，反映“唯精度论”的肤浅技术观。</div>
+  </div>
+</div>
+
+<!-- 环节二 -->
+<h2 id="phase2" class="phase-title">🔹 环节二：数据准备与探索性分析</h2>
+
+<!-- 问题2-1 简单 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题2‑1：数据质量的初步评估</span>
+    <span class="difficulty-tag tag-easy">简单</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>识别数据集中可能存在的数据质量问题类型，提出检测方法，讨论不处理的后果。</p><div class="info-box"><strong>难度依据：</strong>背景已披露部分问题，基于描述性统计和基础可视化，培养“数据怀疑精神”。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、系统识别</strong>——从完整性（缺失值）、有效性（异常值）、一致性（逻辑矛盾）、分布不平衡四个维度梳理。月收入缺失可能为MNAR，逾期次数存在逻辑递进关系检验。</p>
+      <p><strong>二、检测方法表</strong>——列出各问题类型、检测方法及涉及字段。</p>
+      <p><strong>三、不处理的后果</strong>——样本选择偏差、模型扭曲、逻辑错误推断、虚假准确率。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>问题类型全覆盖，检测方法精准，深入分析缺失机制和逻辑不一致的隐患，体现了严谨的数据怀疑态度。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>缺失值：月收入20%，家属数量2%。异常值：年龄、负债率可能不合理。用describe()和箱线图检测。不处理的话模型可能不准。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>识别了主要问题，但遗漏逻辑一致性和类别不平衡，检测方法通用，后果讨论浅显。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>数据应该没什么大问题，15万条够多了。缺失值删掉，异常值删掉。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>缺乏警惕性，处理粗暴，完全未考虑缺失机制和样本偏差，反映“数据量大就任性”的观念。</div>
+  </div>
+</div>
+
+<!-- 问题2-2 中等 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题2‑2：缺失值处理策略的比较与选择</span>
+    <span class="difficulty-tag tag-medium">中等</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>分析缺失机制，比较至少三种填充方法，为MonthlyIncome推荐策略并讨论对建模的影响。</p><div class="info-box"><strong>难度依据：</strong>涉及MCAR/MAR/MNAR理论，需深入理解填充方法原理和适用条件，并进行综合权衡。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、缺失机制推断</strong>——MonthlyIncome更接近MNAR（低收入者不填），NumberOfDependents接近MCAR。</p>
+      <p><strong>二、三种方法比较</strong>——均值/中位数填充、回归填充、多重插补，从原理、适用条件、潜在偏差详细对比。</p>
+      <p><strong>三、推荐策略</strong>——多重插补为主、中位数填充为基准的双轨策略，给出完整MICE实施步骤。</p>
+      <p><strong>四、对建模的影响</strong>——系数估计、标准误、校准度与区分度的具体影响分析。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>缺失机制推断有严谨推理，方法比较五维度完整，推荐策略有方法论深思，影响分析精确到具体指标。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>月收入可能是MNAR，家属MCAR。比较均值填充、回归填充、多重插补，推荐多重插补。填充会影响模型。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>机制推断论据单薄，方法比较缺乏量化分析，推荐缺少比较论证。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>缺失值就用均值填充，一行代码的事。多重插补太复杂，没必要。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>对20%缺失率严重性认识不足，方法选择无依据，完全忽略缺失机制。</div>
+  </div>
+</div>
+
+<!-- 问题2-3 困难 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题2‑3：探索性数据分析的系统性方案</span>
+    <span class="difficulty-tag tag-hard">困难</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>设计覆盖单变量、双变量、多变量的完整EDA方案，选择方法和可视化工具，形成初步建模建议。</p><div class="info-box"><strong>难度依据：</strong>需系统性数据思维，为每层选择适当方法并说明理由，形成从探索到决策的闭环。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、框架逻辑</strong>——“从简单到复杂、从描述到推断、从单变量到多变量”。</p>
+      <p><strong>二、单变量层</strong>——连续变量用中位数/IQR/偏度，离散变量用频数分布，给出具体可视化选择及理由。</p>
+      <p><strong>三、双变量层</strong>——连续vs目标：Welch t检验、Mann‑Whitney U、Cohen’s d、IV值，可视化用分组箱线图、密度曲线、分箱违约率折线图；离散vs目标：卡方检验、违约率分组。</p>
+      <p><strong>四、多变量层</strong>——相关系数矩阵、VIF、分层分析、决策树浅层探索交互效应。</p>
+      <p><strong>五、建模建议</strong>——基于预期EDA发现提出具体特征工程方向和模型选择初步建议。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>方案层次分明，每个方法选择有详细理由，预期发现基于领域知识，从EDA到建模建议桥接自然，体现“探索驱动决策”。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>单变量用describe()和直方图；双变量用groupby、箱线图、t检验；多变量画相关系数热图。建模建议：选重要变量，逻辑回归做基准。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>覆盖三层但缺乏方法选择理由，预期发现和建模建议之间逻辑联系松散。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>EDA就是画图，看看分布，用corr()看相关性，相关性高的变量重要。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>将EDA简化为画图，无层次设计，仅凭相关性选变量，完全未考虑交互效应和非线性。</div>
+  </div>
+</div>
+
+<!-- 环节三 -->
+<h2 id="phase3" class="phase-title">🔹 环节三：模型选择与构建</h2>
+
+<!-- 问题3-1 简单 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题3‑1：逻辑回归模型的构建与理解</span>
+    <span class="difficulty-tag tag-easy">简单</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>说明选择逻辑回归的统计依据，写出数学表达式，编写模型构建代码，解读输出结果。</p><div class="info-box"><strong>难度依据：</strong>基础分类方法，标准建模流程，技术难度有限，检验学生对基础方法的掌握。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、选择依据</strong>——概率输出适配、线性可加性与可解释性、成熟统计推断理论。</p>
+      <p><strong>二、数学表达式</strong>——写出完整log-odds形式并解释每个系数在信用评分中的业务含义。</p>
+      <p><strong>三、代码</strong>——包含数据预处理、L2正则化逻辑回归、statsmodels统计推断、AUC评估的完整Python代码。</p>
+      <p><strong>四、结果解读</strong>——示例系数表配业务解读，指出单位效应与标准化效应的区别。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>选择依据紧扣业务需求，数学解释将抽象符号与信用行为映射，代码规范完整，结果解读结合统计显著性和业务含义。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>逻辑回归简单好用，输出概率。公式是sigmoid。代码用sklearn。系数正的是风险因子，负的是保护因子。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>基本正确但缺乏行业特殊性论证，数学解读浅，代码简略，结果解读流于表面。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>用逻辑回归因为它是分类算法。公式是sigmoid。代码调用sklearn就行。系数大就重要。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>无统计学论证，数学表达不完整，代码为伪代码，结果解读有误（忽略变量尺度）。</div>
+  </div>
+</div>
+
+<!-- 问题3-2 中等 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题3‑2：多模型比较与选择策略</span>
+    <span class="difficulty-tag tag-medium">中等</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>为四种模型设计参数空间，比较评估指标，处理精度-可解释性权衡，论证选择逻辑回归的理由。</p><div class="info-box"><strong>难度依据：</strong>需掌握多种模型并理解参数含义，评估指标考虑类别不平衡，需跳出“精度至上”思维。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、参数空间</strong>——逻辑回归、决策树、随机森林、XGBoost的详细参数及业务影响分析。</p>
+      <p><strong>二、评估指标</strong>——强调准确率误导性，选用AUC、KS、F1、PR AUC、校准度，并设计分层5折交叉验证。</p>
+      <p><strong>三、权衡分析</strong>——五维度比较表，引入边际精度增益的经济学思维。</p>
+      <p><strong>四、选择论证</strong>——边际增益不足以弥补可解释性损失、可解释性不可替代、逻辑回归作为锚点模型、稳定性优于精度。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>参数业务影响分析深入，评估体系考虑类别不平衡，权衡分析多维度，选择论证体系严密。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>调C和penalty，用GridSearchCV。评估用AUC、准确率、F1。在乎解释选逻辑回归，在乎精度选XGBoost。因为金融需可解释所以选逻辑回归。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>参数描述简略，评估提及不平衡但未深入，权衡为二选一，选择论证单薄。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>全部跑一遍，哪个AUC高用哪个。建议XGBoost，参数默认就行。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>完全忽略业务特殊性，缺乏权衡意识，参数使用默认值，与题目要求背离。</div>
+  </div>
+</div>
+
+<!-- 问题3-3 困难 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题3‑3：高级建模策略的综合设计</span>
+    <span class="difficulty-tag tag-hard">困难</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>处理类别不平衡，设计三层次特征工程，讨论正则化策略，设计超越统计指标的模型验证，联系分析迭代理念。</p><div class="info-box"><strong>难度依据：</strong>涉及高级采样技术和特征工程体系，需全局模型治理视角和理论联系实践的能力。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、三层不平衡处理</strong>——数据层Borderline‑SMOTE、算法层class_weight、校准层Platt Scaling，协同解决并防止概率扭曲。</p>
+      <p><strong>二、特征工程</strong>——衍生（逾期得分、剩余收入等）、选择（IV过滤+逐步回归+业务审查）、变换（WOE、标准化、缺失编码）。</p>
+      <p><strong>三、正则化</strong>——L1/L2/Elastic Net对比，推荐L2因稳定性优先，交叉验证选C。</p>
+      <p><strong>四、验证方案</strong>——单调性约束、评分分布、PSI跨时间稳定性、压力测试。</p>
+      <p><strong>五、迭代优化</strong>——EDA与模型对话、简单到复杂渐进、特征工程精炼、监控驱动迭代，紧密呼应书中框架。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>不平衡处理三层协同设计巧妙，特征工程三层次完整，正则化有深度行业解读，验证方案覆盖业务合理性，迭代引用有机自然。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>用SMOTE或class_weight处理不平衡。特征工程加几个新变量，用IV选变量，标准化。正则化用L2。验证看AUC和跨时间稳定。迭代就是不断优化。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>要点覆盖但方法比较不深入，特征工程层次模糊，正则化缺少信用评分特殊考量，迭代讨论笼统。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>SMOTE处理不平衡，特征工程加几个新变量，正则化不用也可以。验证看准确率。迭代就是调参数。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>方法单一无比较，特征工程极度简略，忽视过拟合，准确率误导，将迭代等同于调参。</div>
+  </div>
+</div>
+
+<!-- 环节四 -->
+<h2 id="phase4" class="phase-title">🔹 环节四：结果解释与可视化</h2>
+
+<!-- 问题4-1 简单 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题4‑1：模型结果的基础可视化与解读</span>
+    <span class="difficulty-tag tag-easy">简单</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>绘制ROC/PR曲线、系数图、混淆矩阵，说明指标业务含义，指出可视化设计陷阱。</p><div class="info-box"><strong>难度依据：</strong>分类模型评估基础内容，可视化工具成熟，要求基本解读和设计意识。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、ROC与PR对比</strong>——解释两者含义及在类别不平衡下的互补价值，代码实现并配详细解读。</p>
+      <p><strong>二、系数可视化</strong>——带颜色的水平条形图，显示系数和几率比。</p>
+      <p><strong>三、混淆矩阵</strong>——给出信用评分场景下的业务含义表，计算精确率/召回率/特异性/F1，引入误分类代价比。</p>
+      <p><strong>四、陷阱</strong>——Y轴不从零开始、混淆矩阵用绝对数值、ROC忽略阈值、颜色不当，给出具体避免策略。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>ROC/PR解读有场景化对比价值，代码规范，混淆矩阵业务映射精确，陷阱分析体现“为读者设计”素养。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>ROC展示真正率vs假正率，AUC越大越好。PR展示精确率vs召回率。画系数条形图。混淆矩阵计算准确率、精确率、召回率。注意颜色不要太花。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>覆盖要素但缺乏场景化解读，陷阱讨论流于表面，缺少具体统计陷阱认识。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>画ROC曲线看AUC，AUC高模型就好。混淆矩阵看准确率。默认画图就行。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>忽略PR曲线和类别不平衡影响，混淆矩阵解读片面，无陷阱讨论。</div>
+  </div>
+</div>
+
+<!-- 问题4-2 中等 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题4‑2：WOE与IV分析的可视化呈现</span>
+    <span class="difficulty-tag tag-medium">中等</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>解释WOE/IV定义，展示至少三个变量的WOE分箱和趋势图，绘制IV排序图，分析分箱信息损失与平衡策略。</p><div class="info-box"><strong>难度依据：</strong>信用评分专用概念，需理解分箱离散化理论基础，在技术优化和业务解释间综合判断。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、数学定义与业务含义</strong>——精确公式，解读WOE正负和IV强弱阈值。</p>
+      <p><strong>二、三个变量分箱案例</strong>——RevolvingUtilization（单调递减趋势）、age（倒U型生命周期）、90天逾期（极端WOE分布），均配详细业务解读表。</p>
+      <p><strong>三、IV排序图</strong>——Python代码生成分级着色水平条形图，分四个梯队给出变量选择建议。</p>
+      <p><strong>四、信息损失平衡</strong>——离散化损失和单调性约束扭曲两个来源，提出IV拐点法、业务意义优先、保留关键非线性、适度分箱等策略。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>定义准确，变量分析深入业务逻辑，IV图专业且建议层次清晰，信息损失分析具体并有操作性策略。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>WOE=ln(好客户占比/坏客户占比)，IV=加权和。选age等变量做分箱，看WOE趋势是否单调。IV高的入模。分箱损失一些信息但为可解释性可接受，一般5-8箱。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>概念正确但业务解读不深，WOE分析仅关注单调性，IV可视化描述欠缺，信息损失讨论简单。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>WOE就是分箱后算好客户坏客户比例。IV大的变量重要。等频分箱就行。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>公式不完整，无具体变量分析和IV图，分箱策略过于简单，未讨论信息损失。</div>
+  </div>
+</div>
+
+<!-- 问题4-3 困难 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题4‑3：评分卡构建与综合业务解读</span>
+    <span class="difficulty-tag tag-hard">困难</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>完成模型到评分卡的数学转换，构建评分卡表格，分析典型案例，撰写业务报告，设计部署监控指标。</p><div class="info-box"><strong>难度依据：</strong>评分卡转换需专门知识和行业实践，要求“翻译”统计结果为业务语言，设计模型全生命周期监控。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、数学转换</strong>——设定BaseScore=600，BaseOdds=1/19，PDO=50，完整推导Offset=812.38，Factor=72.13，给出单变量得分分解公式。</p>
+      <p><strong>二、评分卡表格</strong>——完整展示五个特征各分箱的WOE、系数及得分，注明MonthlyIncome得分较小的原因。</p>
+      <p><strong>三、三个典型案例</strong>——高风险(402分)、中等风险(522分)、低风险(643分)，每例有得分构成分析和差异化业务建议。</p>
+      <p><strong>四、业务报告摘要</strong>——面向风险管理委员会，用非技术语言总结模型能力、关键信号、四级分类建议和试运行计划。</p>
+      <p><strong>五、监控体系</strong>——区分度(AUC/KS)、稳定性(PSI/CSI)、校准度、业务效果四维度，每项有频率和预警阈值。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>数学推导完整自洽，评分卡规范，案例层次覆盖全，业务报告成功“翻译”技术语言，监控体系可操作，展现完整的模型生命周期管理能力。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>评分卡Score = Offset + Factor × ln(Odds)，设基准600，PDO=50。做各特征得分表，选几个客户算总评分。写报告说明效果和重要特征。监控AUC、KS，下降就重新训练。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>转换要点基本正确但推导不完整，案例缺乏数值细节，业务报告不够丰富，监控指标不全面。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>评分卡就是把概率转成300-900的分数，公式网上有。高分好低分差。监控看准确率。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>数学原理完全缺失，缺少表格和案例，报告未撰写，监控仅提到准确率，对评分卡核心工具缺乏理解。</div>
+  </div>
+</div>
+
+<!-- 环节五 -->
+<h2 id="phase5" class="phase-title">🔹 环节五：报告生成</h2>
+
+<!-- 问题5-1 简单 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题5‑1：分析报告的基本结构设计</span>
+    <span class="difficulty-tag tag-easy">简单</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>设计报告结构，说明各章节目标读者和信息需求，选择附录，讨论技术-业务翻译挑战。</p><div class="info-box"><strong>难度依据：</strong>报告结构设计是基础写作技能，旨在建立“分析结果需有效沟通才能产生价值”的意识。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>一、报告结构</strong>——封面与摘要、六章正文（业务背景→数据概述→EDA→模型开发→评分卡应用→结论建议）加四个附录。</p>
+      <p><strong>二、读者分层</strong>——决策者（需结论+建议）、技术评审者（验证严谨性）、业务用户（使用评分卡），各章节对应信息需求分析。</p>
+      <p><strong>三、附录选择</strong>——评分卡表格、技术细节、代码清单、术语表，各有明确服务对象和理由。</p>
+      <p><strong>四、翻译挑战</strong>——以AUC、变量重要性、模型局限性为例，展示从技术表达到业务语言的完整转换，总结“翻译”核心原则。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>结构完整分层合理，读者分析精准，附录体现可复现和审计意识，翻译示例具体且提炼方法论原则。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>结构：摘要、背景、数据分析、模型、结果、结论。技术人员看模型部分，业务人员看结论。附录放代码和图表。写报告时少用术语。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>结构基本合理但章节说明缺细节，读者分析笼统，附录缺少理由，翻译讨论表面化。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>报告就写数据来源、建模过程、最终模型、结论。附上代码。不用管读者是谁，写清楚就行。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>结构极度简略，完全忽略读者差异，附录单一，对沟通价值存在根本性误解。</div>
+  </div>
+</div>
+
+<!-- 问题5-2 中等 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题5‑2：技术报告的撰写与同行评审准备</span>
+    <span class="difficulty-tag tag-medium">中等</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>撰写面向技术同行的可复现方法论文档，为每个决策提供依据，使用Notebook风格，准备“已知局限性”清单。</p><div class="info-box"><strong>难度依据：</strong>要求完整的分析流程记录和决策论证，使用可复现文档工具，需主动识别模型潜在风险。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>方法论文档模板</strong>——按Jupyter Notebook风格：环境配置、数据加载、缺失值分析（MICE选择依据）、异常值截断决策、目标分布、WOE/IV计算、变量筛选依据、L2逻辑回归参数选择。</p>
+      <p><strong>决策依据</strong>——每个步骤均包含“为什么这样做”的详细解释（如为什么用多重插补而非删除、为什么L2而非L1）。</p>
+      <p><strong>已知局限性清单</strong>——数据时效性、特征范围限制、样本选择偏差、多重共线性影响、缺失值假设敏感性、类别不平衡处理影响，共六项具体可检查的局限。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>文档符合可复现标准，每步有“做什么-结果-为什么”三要素，决策依据有深度，局限性清单具体且可操作，体现成熟的风险评估意识。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>文档记录导入数据、处理缺失、训练模型。为什么用逻辑回归？可解释性好。局限是可能过拟合，数据不全面。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>文档要素不全，决策依据笼统，局限性识别泛泛，缺乏系统性和专业性。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>写个文档记录用了什么代码。方法选择常用的就行。局限就是模型不是100%准确。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>对可复现文档标准无认识，无任何决策依据，局限性回答完全不合格。</div>
+  </div>
+</div>
+
+<!-- 问题5-3 困难 -->
+<div class="question-box">
+  <div class="question-header">
+    <span class="question-title">问题5‑3：全流程分析报告的撰写与综合评估</span>
+    <span class="difficulty-tag tag-hard">困难</span>
+  </div>
+  <div class="answer-section"><p><strong>问题描述：</strong>整合全部成果撰写完整业务报告，含执行摘要、五个可视化图表及业务解读、量化行动建议、PPT大纲、模型治理章节。</p><div class="info-box"><strong>难度依据：</strong>需整合全部环节成果，一页执行摘要、量化风险收益分析、高管汇报节奏设计、模型全生命周期治理，综合考验高阶沟通与整合能力。</div></div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-good">好</span> 答案示例</div>
+    <div class="answer-content">
+      <p><strong>完整报告</strong>——封面、执行摘要（一页涵盖背景/发现/建议/下一步）、第一章业务背景、第二章数据与方法概述、第三章模型性能与关键发现（含五个图表及业务解读：ROC/KS、特征重要性、评分分布热力图、审批策略对比、部署前后对比）、第四章行动建议与风险收益分析（三阶段部署、量化收益预测含敏感性分析、非量化收益）、第五章模型治理（审查计划、重新训练触发条件、版本管理）。附录包含评分卡表、WOE结果、交叉验证、评分推导。</p>
+      <p><strong>PPT大纲</strong>——7张幻灯片，每页有精确时间分配和核心信息点设计。</p>
+      <p><strong>亮点总结</strong>——贯穿“技术-业务桥梁”思维，每个指标有业务解读，每个发现转化为业务建议。</p>
+    </div>
+    <div class="reason-box reason-good"><strong>质量定级理由：</strong>报告结构专业完整，执行摘要精炼有力，图表配有业务解读，行动建议有量化分析和敏感性分析，PPT节奏合理，模型治理设计具体可操作，完美展现“数据驱动决策”能力。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-mid">中</span> 答案示例</div>
+    <div class="answer-content"><p>报告含摘要、背景、方法、结果、建议。画了ROC曲线、特征重要性图、评分分布图。建议高分自动审批，低分人工复核，能降低坏账率。PPT七页：标题、为什么做、怎么做、结果、建议、谢谢。定期检查模型，效果不好重新训练。</p></div>
+    <div class="reason-box reason-mid"><strong>质量定级理由：</strong>结构基本完整但内容展开不足，图表缺少详细业务解读，行动建议缺乏量化分析，PPT和治理章节简略。</div>
+  </div>
+  <div class="answer-section">
+    <div class="answer-quality"><span class="quality-badge badge-bad">差</span> 答案示例</div>
+    <div class="answer-content"><p>写份报告总结分析结果，模型AUC 0.82，建议用这个模型。PPT放几个关键图表，口头讲一下。</p></div>
+    <div class="reason-box reason-bad"><strong>质量定级理由：</strong>严重偏离题目要求，未按要求撰写完整报告，缺少可视化设计、量化分析、PPT大纲和治理章节，对高管汇报场景严重误判。</div>
+  </div>
+</div>
+
+<!-- 总结 -->
+<h2 id="summary">📌 总结</h2>
+<p>本评测任务集围绕<strong>“某银行信用卡客户风险评分分析”</strong>案例，按照<strong>“问题提出与转化 → 数据准备与探索性分析 → 模型选择与构建 → 结果解释与可视化 → 报告生成”</strong>五个环节设计了15个问题，每个环节包含简单、中等、困难三个难度等级。每个问题均提供了<strong>好、中、差</strong>三种质量的参考答案，涵盖了评分卡开发的全流程方法论。</p>
+<p>评价标准综合参考了<strong>《The Art of Data Science》</strong>中阐述的核心原则：<strong>统计技术正确性</strong>（方法选择与计算准确）、<strong>分析深度与广度</strong>（探索充分性与论证严谨性）、<strong>沟通与呈现质量</strong>（报告清晰性与结论可操作性）。好答案在技术准确的基础上展现深度思考、业务洞察和有效沟通；中答案基本正确但深度不足；差答案则反映对分析方法和业务场景的理解存在明显缺陷。</p>
+<p>在金融风控领域，信用评分卡模型因其极高的可解释性和稳定性，成为业界公认的工业级标准方案。本任务集旨在帮助学生掌握从业务问题到模型部署的完整分析流程，理解数据分析不仅是技术操作，更是一个需要创造性判断和有效沟通的艺术过程。</p>
+
+</div>
+</body>
+</html>
